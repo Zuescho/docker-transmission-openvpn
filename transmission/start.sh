@@ -8,10 +8,20 @@
 echo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $1 : $4"
 export TRANSMISSION_BIND_ADDRESS_IPV4=$4
 
+if [ "combustion" = "$TRANSMISSION_WEB_UI" ]; then
+  echo "Using Combustion UI, overriding TRANSMISSION_WEB_HOME"
+  export TRANSMISSION_WEB_HOME=/opt/transmission-ui/combustion-release
+fi
+
+if [ "kettu" = "$TRANSMISSION_WEB_UI" ]; then
+  echo "Using Kettu UI, overriding TRANSMISSION_WEB_HOME"
+  export TRANSMISSION_WEB_HOME=/opt/transmission-ui/kettu
+fi
+
 echo "Generating transmission settings.json from env variables"
 # Ensure TRANSMISSION_HOME is created
 mkdir -p ${TRANSMISSION_HOME}
-dockerize -template /etc/transmission/settings.tmpl:${TRANSMISSION_HOME}/settings.json /bin/true
+dockerize -template /etc/transmission/settings.tmpl:${TRANSMISSION_HOME}/settings.json
 
 if [ ! -e "/dev/random" ]; then
   # Avoid "Fatal: no entropy gathering module detected" error
@@ -22,7 +32,7 @@ fi
 . /etc/transmission/userSetup.sh
 
 echo "STARTING TRANSMISSION"
-exec sudo -u ${RUN_AS} /usr/bin/transmission-daemon -g ${TRANSMISSION_HOME} --logfile ${TRANSMISSION_HOME}/transmission.log &
+exec sudo -E -u ${RUN_AS} /usr/bin/transmission-daemon -g ${TRANSMISSION_HOME} --logfile ${TRANSMISSION_HOME}/transmission.log &
 
 if [ "$OPENVPN_PROVIDER" = "PIA" ]
 then
